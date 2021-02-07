@@ -5,6 +5,7 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const bcrypt = require("bcryptjs");
 
 const mongoDb = "mongodb+srv://anb137:drowssap@cluster0.uaujf.mongodb.net/<authDB?retryWrites=true&w=majority";
 mongoose.connect(mongoDb, { useUnifiedTopology: true, useNewUrlParser: true });
@@ -35,9 +36,15 @@ passport.use(
         if (!user) {
           return done(null, false, { message: "Incorrect username" });
         }
-        if (user.password !== password) {
-          return done(null, false, { message: "Incorrect password" });
-        }
+        bcrypt.compare(password, user.password, (err, res) => {
+          if (res) {
+            // passwords match! log user in
+            return done(null, user)
+          } else {
+            // passwords do not match!
+            return done(null, false, { message: "Incorrect password" })
+          }
+        });
         return done(null, user);
       });
     })
@@ -58,15 +65,23 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(function(req, res, next) {
+  res.locals.currentUser = req.user;
+  next();
+});
+
 app.get("/", (req, res) => {
     res.render("index", { user: req.user });
 });
+
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 
 app.post("/sign-up", (req, res, next) => {
+  let salt = bcrypt.genSaltSync(10);
+  let hash=bcrypt.hashSync(req.body.password,salt);
   const user = new User({
     username: req.body.username,
-    password: req.body.password
+    password: hash
   }).save(err => {
     if (err) { 
       return next(err);
