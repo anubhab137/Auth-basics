@@ -6,8 +6,11 @@ const LocalStrategy = require("passport-local").Strategy;
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const bcrypt = require("bcryptjs");
+require('dotenv').config()
 
-const mongoDb = "mongodb+srv://anb137:drowssap@cluster0.uaujf.mongodb.net/<authDB?retryWrites=true&w=majority";
+
+
+const mongoDb = process.env.MONGO_CON;
 mongoose.connect(mongoDb, { useUnifiedTopology: true, useNewUrlParser: true });
 const db = mongoose.connection;
 db.once("open", function() {
